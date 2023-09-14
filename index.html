@@ -96,7 +96,7 @@
     <div class="e-content article-entry" itemprop="articleBody">
       
         <h2 id="UCB-算法"><a href="#UCB-算法" class="headerlink" title="UCB 算法"></a>UCB 算法</h2><p>Upper Confidence Bound Algorithm, 是一个多臂老虎机算法，用于解决探索与利用的问题。</p>
-<h3 id="设计初衷"><a href="#设计初衷" class="headerlink" title="设计初衷"></a>设计初衷</h3><p>Exploration the commit 算法，对每个动作探索相同的次数，即使对于已经比较差的动作，也会尝试m次，从而造成浪费</p>
+<h3 id="设计初衷"><a href="#设计初衷" class="headerlink" title="设计初衷"></a>设计初衷</h3><p>Exploration then commit 算法，对每个动作探索相同的次数，即使对于已经比较差的动作，也会尝试m次，从而造成浪费</p>
 <h3 id="算法描述"><a href="#算法描述" class="headerlink" title="算法描述"></a>算法描述</h3><p>UCB会在每轮中对每个动作进行评分，之后选择评分最高的动作进行尝试，评分的设计目标如下：<br> (1) 如果一个动作探索的次数比别的动作少，则它更该被选中（评分更高）<br> (2) 如果一个动作的平均收益比别的动作高，则它更该被选中（评分更高）</p>
 <h3 id="什么是置信区间"><a href="#什么是置信区间" class="headerlink" title="什么是置信区间"></a>什么是置信区间</h3><script type="math/tex; mode=display">\mathbb{P}(\hat{\mu} - \epsilon < \mu < \hat{\mu} + \epsilon) = \lambda</script><p>其中，$\hat{\mu}$是样本均值，$\epsilon$是探索奖励（有鼓励探索的作用），$\lambda$是置信度</p>
 <h3 id="直观结果"><a href="#直观结果" class="headerlink" title="直观结果"></a>直观结果</h3><p> (1) 探索次数少，样本容量小，$\epsilon$变大，置信区间上界变大，更应该被选中<br> (2) $\hat{\mu}$ 收到以往探索受到奖励的大小变化，如果以往大，那么置信区间的上界就大<br> (3) 不会过多探索较差的动作，优先探索目前好的（UCB最大的）<br>置信水平会随着探索次数增加而减小，即$\lambda$会随着探索次数增加而减小，这样可以保证算法会收敛到最优解</p>
