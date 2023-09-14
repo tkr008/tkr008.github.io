@@ -14,7 +14,7 @@
 <meta property="og:description" content="UCB 算法Upper Confidence Bound Algorithm, 是一个多臂老虎机算法，用于解决探索与利用的问题。 设计初衷Exploration the commit 算法，对每个动作探索相同的次数，即使对于已经比较差的动作，也会尝试m次，从而造成浪费 算法描述UCB会在每轮中对每个动作进行评分，之后选择评分最高的动作进行尝试，评分的设计目标如下： (1) 如果一个动作探索的次数比">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2023-09-12T18:35:39.000Z">
-<meta property="article:modified_time" content="2023-09-13T06:38:44.620Z">
+<meta property="article:modified_time" content="2023-09-13T17:04:36.626Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary">
   
@@ -105,7 +105,7 @@
 <h2 id="UCB的推导"><a href="#UCB的推导" class="headerlink" title="UCB的推导"></a>UCB的推导</h2><p>UBC算法只关心上界：</p>
 <script type="math/tex; mode=display">\mathbb{P}(\mu < \hat{\mu} + \epsilon) = \lambda</script><script type="math/tex; mode=display">\Rightarrow\mathbb{P}(\mu - \hat{\mu} \geq \epsilon) = 1 - \lambda = \delta</script><p>保守置信区间：</p>
 <script type="math/tex; mode=display">\mathbb{P}(\mu - \hat{\mu} \geq \epsilon) = 1 - \lambda \leq \delta</script><p>依据霍夫丁界：</p>
-<script type="math/tex; mode=display">\mathbb{P}(\mu - \hat{\mu} \geq \epsilon) \leq exp\left(-\frac{h\epsilon^2}{2}\right)</script><script type="math/tex; mode=display">\Rightarrow \delta = exp\left(-\frac{h\epsilon^2}{2}\right)</script><script type="math/tex; mode=display">\epsilon = \sqrt{\frac{2log(1/ \delta)}{n}}</script><p>得到每个动作的UCB：</p>
+<script type="math/tex; mode=display">\mathbb{P}(\mu - \hat{\mu} \geq \epsilon) \leq exp\left(-\frac{n\epsilon^2}{2}\right)</script><script type="math/tex; mode=display">\Rightarrow \delta = exp\left(-\frac{n\epsilon^2}{2}\right)</script><script type="math/tex; mode=display">\epsilon = \sqrt{\frac{2log(1/ \delta)}{n}}</script><p>得到每个动作的UCB：</p>
 <script type="math/tex; mode=display">UCB_i(t-1, \delta) \triangleq 
 \left\{
   \begin{aligned}
@@ -121,11 +121,86 @@
 <li>最简单的： 集中不等式</li>
 <li>一步一步拆，看看能不能推出一个次线性增长的界</li>
 </ol>
-<h4 id="大体框架"><a href="#大体框架" class="headerlink" title="大体框架"></a>大体框架</h4><p>算法产生了遗憾 $\leftrightarrow $ 算法选择了次优的动作 $\leftrightarrow$ 次优动作的指标高于其他的所有动作 $\rightarrow$ 次优动作的指标高于最优动作的指标<br>$\Rightarrow$ 最优动作的指标过低，次优动作的指标过高。</p>
-<p>我们知道，每个状态的UCB指标是分为两部分来计算的，一部分是累积奖励的平均值，一部分是探索奖励，我们可以通过分析这两部分来分析算法的遗憾。<br>探索奖励会随着一个动作探索次数的增加而衰减，因此它不会影响太多，只会影响前面有限轮。关注一个算法的遗憾是不是次线性增长，关注的是长期的增长速度，不会受到前面有限轮遗憾的影响。</p>
-<p>```mermaid<br>graph TD;<br>A—&gt;B;<br>A—&gt;C;<br>B—&gt;D;<br>C—&gt;D;</p>
-<p>```gantt<br>dateFormat  YYYY-MM-DD<br>title Adding Gantt diagram functionality to Mermaid</p>
-<p>section A section<br>Completed task            :done,    des1, 2014-01-06,2014-01-08<br>Active task               :active,  des2, 2014-01-09, 3d<br>Future task               :         des3, after des2, 5d<br>Future task2              :         des4, after des3, 5d</p>
+<h4 id="大体框架"><a href="#大体框架" class="headerlink" title="大体框架"></a>大体框架</h4><p>算法产生了遗憾 $\leftrightarrow $ 算法选择了次优的动作 $\leftrightarrow$ 次优动作的指标高于其他的所有动作 $\rightarrow$ 次优动作的指标高于最优动作的指标</p>
+<pre class="mermaid">graph LR;
+A(次优动作的指标高于最优动作的指标)-->B(最优动作的指标过低)
+A(次优动作的指标高于最优动作的指标)-->C(次优动作的指标过高)
+C-->D(次优动作奖励均值的经验估计更高)
+C-->E(次优动作的探索奖励过高) 
+E -.- F(不影响regret的长期增长)</pre>
+
+<p>我们知道，每个状态的UCB指标是分为两部分来计算的，一部分是累积奖励的平均值，一部分是探索奖励，我们可以通过分析这两部分来分析算法的遗憾。探索奖励会随着一个动作探索次数的增加而衰减，因此它不会影响太多，只会影响前面有限轮。关注一个算法的遗憾是不是次线性增长，关注的是长期的增长速度，不会受到前面有限轮遗憾的影响。</p>
+<h4 id="定理1"><a href="#定理1" class="headerlink" title="定理1"></a>定理1</h4><p>对于任意的$k&gt;1$, 在奖励分布为$P_1, …, P_k$, 支撑集为$[0, 1]$的$k$臂老虎机问题中运行UCB1策略，则$n$轮后产生的regret最多为：</p>
+<script type="math/tex; mode=display">
+\left[8\sum_{i:\mu_i < \mu^*}\left(\frac{\log n}{\Delta_i}\right) \right] + \left(1 + \frac{\pi^2}{3}\right)\left(\sum_{j=1}^k \Delta_j\right)</script><p>其中，$\Delta_i = \mu^{\ast} - \mu_i$，$\mu^{\ast}$ 是最优动作的奖励均值，$\mu_i$ 是第 $i$ 个动作的奖励均值（分布 $P_1, …, P_k$ 的均值）</p>
+<h5 id="Proof"><a href="#Proof" class="headerlink" title="Proof"></a>Proof</h5><p>奖励有界：（几乎处处在[0,1]之间）次高斯性被满足</p>
+<p>设$X_{t,i}$为第$i$个动作第$t$次被选择后返回的奖励。可知$X_t = X_{T_{A(t)}, A_t}$</p>
+<p>设$\hat{\mu}_{i,s} \triangleq \frac{1}{s}\sum_{u=1}^s X_{u,i}$为基于前$s$个样本计算的第$i$个动作的奖励均值的经验估计，可知$\hat{\mu}_{i}(t) = \hat{\mu}_{i, T_i(t)}$</p>
+<p>不失一般性的假设第一个动作为最优动作，即 $\mu_1 = \mu^{\ast} = max_{i\in[k]}\mu_i$。并定义 $c_{t,s} = \sqrt{\frac{2\log t}{s}}$</p>
+<p>据此改写每个动作的UCB为：</p>
+<script type="math/tex; mode=display">UCB_i(t-1, \frac{1}{t-1}) \triangleq 
+\left\{
+  \begin{aligned}
+    &\infty &&\text{if}\ T_i(t-1) = 0 \\
+    &\hat{\mu}_i(t-1) + c_{t-1, T_i(t-1)} &&otherwise \\
+  \end{aligned}
+\right.</script><p>设 $l$ 为任意一个正整数，假设$n &gt; k$(博弈的总轮数大于总的动作数，原因就是做出有意义的决策要全部探索过所有的动作)，则有：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+T_i(n) = {} & \sum_{t=1}^n \mathbb{I}\left\{A_t = i\right\} \\
+= {} & \sum_{t=1}^k \mathbb{I}\left\{A_t = i\right\} + \sum_{t=k+1}^n \mathbb{I}\left\{A_t = i\right\} \\
+= {} & 1 + \sum_{t=k+1}^n \mathbb{I}\left\{A_t = i\right\} &(1)\\
+= {} & 1 + \sum_{t=k+1}^n \left(\mathbb{I}\left\{A_t = i, T_i(t-1) \geq l\right\} + \mathbb{I}\left\{A_t = i, T_i(t-1) < l\right\}\right) \\
+= {} & 1 + \sum_{t=k+1}^n \mathbb{I}\left\{A_t = i, T_i(t-1) \geq l\right\} + \sum_{t=k+1}^n \mathbb{I}\left\{A_t = i, T_i(t-1) < l\right\} (\text{最多}l-1\text{项不为}0) \\
+\leq {} & l + \sum_{t=k+1}^n \mathbb{I}\left\{A_t = i, T_i(t-1) \geq l\right\} \\
+\leq {} & l + \sum_{t=k+1}^n \mathbb{I}\left\{UCB_1(t-1, \frac{1}{t-1}) \leq UCB_i(t-1, \frac{1}{t-1}), T_i(t-1) \geq l\right\} &(2)\\
+= {} & l + \sum_{t=k+1}^n \mathbb{I}\left\{\hat{\mu}_{1, T_1(t-1)} + c_{t-1, T_1(t-1)} \leq \hat{\mu}_{i, T_i(t-1)} + c_{t-1, T_i(t-1)}, T_i(t-1) \geq l\right\} \\
+= {} & l + \sum_{t = k+1}^n \mathbb{I}\left\{\bigcup_{s\in \{1, ..., t-1\}}\bigcup_{s_i\in \{l,...,t-1\}}\left\{\hat{\mu}_{1, s} + c_{t-1, s} \leq \hat{\mu}_{i, s_i} + c_{t-1, s_i}\right\} \right\} \\
+\leq {} & l + \sum_{t = k}^{n-1} \sum_{s=1}^t\sum_{s_i=l}^t\mathbb{I}\left\{\hat{\mu}_{1, s} + c_{t, s} \leq \hat{\mu}_{i, s_i} + c_{t, s_i}\right\} &(3)\\
+\end{aligned}</script><p>$(1)\ $成立是因为UCB算法在前$k$轮中访问了所有的（总共$k$个）动作，后求和式的每一项表示算法在第$t$轮选择了第$i$个动作,<br>$(2)\ $ <script type="math/tex">A_t = i \Leftrightarrow \forall j \in [k]\quad UCB_j(t-1, \frac{1}{t-1}) \leq UCB_i(t-1, \frac{1}{t-1}) \Rightarrow UCB_1(t-1, \frac{1}{t-1}) \leq UCB_i(t-1, \frac{1}{t-1})</script>,<br>$(3)\ $$\mathbb{I} \left\{A\cup B \right\} \leq \mathbb{I} \left\{A \right\} + \mathbb{I}\left\{B \right\} $<br>$\quad$表示在$t$时刻，最优动作被选择过$s$次，第$i$个动作被选过$s_i$次，最优动作指标 $\leq$ 动作$i$指标<br>$\quad$若$\hat{\mu}_{1, s} + c_{t, s} \leq \hat{\mu}_{i, s_i} + c_{t, s_i}$成立，则下列3个不等式至少一个成立：</p>
+<script type="math/tex; mode=display">
+\left\{
+  \begin{aligned}
+    \hat{\mu}_{1,s} &\leq \mu_1 - c_{t, s} &(i)\\
+    \hat{\mu}_{i,s_i} &\geq \mu_i + c_{t, s_i} &(ii)\\
+    \mu_1 &\leq \mu_i + 2c_{t, s_i} &(iii)\\
+  \end{aligned}
+\right.</script><p>$\quad (i)$ UCB of the optimal action is low(UCB should be an overestimated indicator, now it’s lower than the mean)<br>$\quad (ii)$ overestimate the expected reward of the ith action(larger than mean plus exploration reward)<br>$\quad(iii)$ ith action’s exploration reward is too large<br>$\quad$ 采用反证法，假设三个式子均不成立，矛盾。</p>
+<p>针对$(i),(ii)$所对应时间应用霍夫丁界：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+&\mathbb{P} \left( \hat{\mu}_{1,s} \leq \mu_1 - c_{t, s}\right)\\
+= {} &\mathbb{P}\left(-\hat{\mu}_{1,s}-(-\mu_1) \geq c_{t, s} \right)\\
+= {} &\mathbb{P}\left(\sum_{u=1}^s (X_{u,i} - \mu_{i}) \geq sc_{t, s} \right)\\
+\leq {} &exp\left\{-\frac{\left(sc_{t, s}\right)^2}{2\times\frac{1}{4}s}\right\}\\
+= {} &exp\left(-4\log t\right)\\
+= {} &t^{-4} & (i')
+\end{aligned}</script><p>类似的：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+& \mathbb{P} \left(\hat{\mu}_{i,s_i} \geq \mu_i + c_{t, s_i}\right) = t^{-4} & (ii')
+\end{aligned}</script><p>由于 $l$ 任取，且探索奖励仅在一开始有影响，对长期意义上的影响不明显，我们可以取 $l = \lceil \frac{8\log n}{\Delta_i^2} \rceil$，以使得$(iii)$式永远不成立，验证如下：<br>假设成立，则 $\Delta_i \leq 2c_{t,s} \leq \Delta_i\sqrt{\frac{\log t}{\log n}} \Rightarrow t \geq n$, 矛盾！（因为求和里是t从k到n-1）</p>
+<p>因此，</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+&\mathbb{E} \left[ T_i(n)\right]\\
+\leq {} &\mathbb{E}\left[ l + \sum_{t=k}^{n-1}\sum_{s=1}^{t}\sum_{s_i=l}^t \mathbb{I}\left\{\hat{\mu}_{1, s} + c_{t, s} \leq \hat{\mu}_{i, s_i} + c_{t, s_i}\right\} \right]\\
+= {} &l + \sum_{t=k}^{n-1}\sum_{s=1}^{t}\sum_{s_i=l}^t \mathbb{P}\left\{\hat{\mu}_{1, s} + c_{t, s} \leq \hat{\mu}_{i, s_i} + c_{t, s_i}\right\}\\
+= {} &l + \sum_{t=k}^{n-1}\sum_{s=1}^{t}\sum_{s_i=l}^t \mathbb{P}\left(\left\{\hat{\mu}_{1,s} \leq \mu_1 - c_{t, s}\right\}\cup \left\{\hat{\mu}_{i,s_i} \geq \mu_i + c_{t, s_i}\right\}\right)\\
+\leq {} &l + \sum_{t=k}^{n-1}\sum_{s=1}^{t}\sum_{s_i=l}^t \left[\mathbb{P}\left\{\hat{\mu}_{1,s} \leq \mu_1 - c_{t, s}\right\} + \mathbb{P}\left\{\hat{\mu}_{i,s_i} \geq \mu_i + c_{t, s_i}\right\}\right]\\
+\leq {} &l + \sum_{t=k}^{n-1}\sum_{s=1}^{t}\sum_{s_i=l}^t \left(t^{-4} + t^{-4}\right)\\
+= {} & \lceil \frac{8\log n}{\Delta_i^2} \rceil + \sum_{t=k}^{n-1}\sum_{s=1}^{t}\sum_{s_i=l}^t \left(t^{-4} + t^{-4}\right)\\
+\leq {} & \frac{8\log n}{\Delta_i^2} + 1 + \sum_{t=k}^{n-1}\sum_{s=1}^{t}\sum_{s_i=1}^t \left(2t^{-4}\right)\\
+\leq {} & \frac{8\log n}{\Delta_i^2} + 1 + \sum_{t=k}^{n-1} \left(2t^{-2}\right)\\
+\leq {} & \frac{8\log n}{\Delta_i^2} + 1 + \sum_{t=1}^{\infty} \left(2t^{-2}\right)\\
+\leq {} & \frac{8\log n}{\Delta_i^2} + 1 + \frac{\pi^2}{3}\\
+\end{aligned}</script><p>将此式带入遗憾分解引理，得：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+R_n = {} & \sum_{i=1}^k\mathbb{E}\left[T_i(n)\right]\Delta_i\\
+= {} & \sum_{i=2}^k\mathbb{E}\left[T_i(n)\right]\Delta_i\\
+\leq {} & \sum_{i=2}^k\frac{8\log n}{\Delta_i^2} + \left(1 + \frac{\pi^2}{3}\right)\left(\sum_{i=2}^k\Delta_i\right)
+\end{aligned}</script><h3 id="Remark"><a href="#Remark" class="headerlink" title="Remark"></a>Remark</h3><p>如果想让$(iii)$不成立，就必须要探索奖励小于次优间隙的一半，加入次优间隙本身就很小，那么就需要探索相当多的次数（l）来减小探索奖励进而满足这个条件。一个合理的方案是单独处理那些次优间隙小的动作…</p>
 
       
     </div>
@@ -237,6 +312,15 @@
 
 
 
+
+
+
+  <script src='https://unpkg.com/mermaid@7.1.2/dist/mermaid.min.js'></script>
+  <script>
+    if (window.mermaid) {
+      mermaid.initialize({theme: 'default'});
+    }
+  </script>
 
   </div>
 <script type="text/x-mathjax-config">
